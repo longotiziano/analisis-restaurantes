@@ -23,3 +23,8 @@ directorio_limpio = BASE_DIR / "data" / "datos-limpios"
 path_limpio = f"{directorio_limpio}/aperturas_ipc_limpio.csv"
     
 filtered_indec_df.to_csv(path_limpio, sep=";")
+
+directorio_restos = BASE_DIR / "data" / "ba_data"
+path_restos = f"{directorio_restos}/oferta_gastronomica_caba.xlsx"
+df = pd.read_excel(path_restos, engine="openpyxl") 
+print(df)
