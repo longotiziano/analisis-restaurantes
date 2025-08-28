@@ -6,7 +6,7 @@ def obtener_estacion(fecha: date) -> str:
     """
     year = fecha.year
     
-    # Definimos los rangos de cada estación
+    # Defino los rangos de las estaciones
     otoño_inicio = date(year, 3, 21)
     invierno_inicio = date(year, 6, 21)
     primavera_inicio = date(year, 9, 21)
