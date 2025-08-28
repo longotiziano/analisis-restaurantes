@@ -1,8 +1,0 @@
-services:  
-  python:
-    container_name: python_container
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - ./:/scripts
