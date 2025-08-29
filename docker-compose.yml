@@ -10,7 +10,7 @@ services:
       - pgdata:/var/lib/postgresql/data 
       #- ./sql/backups:/docker-entrypoint-initdb.d/backups
       #- ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
-      
+
   pgadmin:
     image: dpage/pgadmin4
     restart: always

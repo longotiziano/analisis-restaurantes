@@ -23,7 +23,7 @@ def obtener_estacion(fecha: date) -> str:
     
 def obtener_actividad_por_estacion(estacion: str) -> float:
     """
-    Obtengo el porcentaje de actividad general en base a la estación del año
+    Obtengo el multiplicador de actividad general en base a la estación del año
     """
     act_por_estacion = {
         "otoño":0.8,
