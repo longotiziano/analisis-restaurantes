@@ -1,3 +1,5 @@
+from sql.database import SessionLocal
+from sql.models import Restaurantes, Especialidades
 from datetime import date
 
 def obtener_estacion(fecha: date) -> str:
@@ -70,5 +72,26 @@ def obtener_actividad_por_especialidad(especialidad: str, estacion: str) -> floa
         }
     }
     return actividad_especialidad[especialidad][estacion]
+
+def obtener_especialidad_por_restaurante(r_id: int) -> str:
+    """
+    Helper utilizado para obtener la especialidad de la ID del restaurante asignado
+    """
+    with SessionLocal() as session:
+        especialidad = session.query(Especialidades.nombre_especialidad)\
+                        .join(Restaurantes, Especialidades.especialidad_id == Restaurantes.especialidad_id)\
+                        .filter(Restaurantes.r_id == r_id)\
+                        .scalar()
+    return especialidad or "No encontrada"
+
+def multiplicador_especialidad(r_id: int, estacion: str) -> float:
+    """
+    Unión de la lógica referente a la actividad por estación y especialidad
+    """
+    especialidad = obtener_especialidad_por_restaurante(r_id)
+    mult_actividad = obtener_actividad_por_especialidad(especialidad, estacion)
+    return mult_actividad
+                        
+
         
 

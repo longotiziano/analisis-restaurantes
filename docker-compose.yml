@@ -1,5 +1,6 @@
 services:  
   db:
+    container_name: db_container
     image: postgres
     restart: always
     env_file:
@@ -8,10 +9,10 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data 
-      #- ./sql/backups:/docker-entrypoint-initdb.d/backups
-      #- ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   pgadmin:
+    container_name: pgadmin_container
     image: dpage/pgadmin4
     restart: always
     env_file:
