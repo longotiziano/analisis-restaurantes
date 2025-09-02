@@ -1,4 +1,4 @@
-from scripts.helpers import obtener_estacion, obtener_actividad_por_estacion, multiplicador_especialidad
+from scripts.helpers import obtener_estacion, obtener_actividad_por_estacion, obtener_actividad_por_especialidad, obtener_especialidades
 from sql.database import engine, SessionLocal
 from sql.models import Ventas
 import pandas as pd
@@ -36,7 +36,7 @@ def generar_ventas_aleatorias() -> pd.DataFrame:
             SELECT
                 cdp.r_id,
                 mpc.id_materia_prima AS mp_id,
-                ROUND((SUM(mpc.mp_cantidad * cdp.prod_por_mat_cat) / 1000)::NUMERIC, 1) AS cantidad_kg
+                (SUM(mpc.mp_cantidad * cdp.prod_por_mat_cat) / 1000) AS cantidad_kg
             FROM mat_primas_de_categorias mpc
             JOIN cmp_de_prod cdp ON mpc.id_cat_materia_prima = cdp.cmp_id
             JOIN materia_prima mp ON mpc.id_materia_prima = mp.mp_id
@@ -44,18 +44,22 @@ def generar_ventas_aleatorias() -> pd.DataFrame:
         )
         SELECT * FROM mp_de_mpc;
             """
-    
+    # Voy a simular los valores desde 2021 hasta la actualidad
     fechas = pd.date_range(start='2021-01-01', end='2025-08-01', freq='MS')
-    fechas_lista = fechas.strftime('%Y-%m-%d').tolist()
+    fechas_lista = [ts.date() for ts in fechas]
     lista_ventas = []
     # Itero en el rango de fechas establecido, repitiendo la consulta escrita para cada mes
     for fecha in fechas_lista:
         df = pd.read_sql(query, engine)
         df['fecha'] = fecha
-        # Aplico el multiplicador en base a la estación
-        estacion = obtener_estacion(fecha)
-        df['cantidad_kg'] = df['cantidad_kg'] * obtener_actividad_por_estacion(estacion)
-        df['cantidad_kg'] = df['cantidad_kg'] * multiplicador_especialidad(df['r_id'], estacion)
+        # Aplico el multiplicador en base a la estación y la especialidad
+        estacion_actual = obtener_estacion(fecha)
+        df['cantidad_kg'] = df['cantidad_kg'] * obtener_actividad_por_estacion(estacion_actual)
+
+        especialidades = obtener_especialidades()
+        df['especialidad'] = df['r_id'].map(especialidades)
+        df['cantidad_kg'] = df['cantidad_kg'] * df['especialidad'].map(lambda esp: obtener_actividad_por_especialidad(esp, estacion_actual))
+        df['cantidad_kg'] = df['cantidad_kg'].round(2)
 
         lista_dicts = df.to_dict(orient='records')
         lista_ventas.extend(lista_dicts)
