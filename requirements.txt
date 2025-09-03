@@ -2,6 +2,6 @@ pandas
 openpyxl
 sqlalchemy
 psycopg2-binary
-seaborn
-matplotlib
-Flask
+tabula-py
+jpype1
+unidecode

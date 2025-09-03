@@ -1,6 +1,7 @@
 from sql.database import SessionLocal
 from sql.models import Restaurantes, Especialidades
 from datetime import date
+import unidecode
 
 def obtener_estacion(fecha: date) -> str:
     """
@@ -83,6 +84,18 @@ def obtener_especialidades() -> dict:
                             .all())
         
     return mapping or "No encontrados"
+
+def transformar_precios(celda):
+    """
+    Transformación a snake_case y eliminación de tildes.
+    """
+    if isinstance(celda, str):
+        if "," not in celda and "." not in celda:
+            celda = unidecode.unidecode(celda)
+        else:
+            celda = celda.replace(".", "").replace(",", ".")   
+    
+    return celda.lower().replace(" ", "_")
 
                         
 
