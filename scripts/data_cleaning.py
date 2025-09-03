@@ -1,6 +1,5 @@
-from scripts.helpers import transformar_precios
+from scripts.helpers import transformar_precios, obtener_materias_primas
 import tabula
-import numpy as np
 import unidecode
 import pandas as pd
 from pathlib import Path
@@ -42,7 +41,29 @@ df_precios = df_precios.dropna()
 df_precios = df_precios.applymap(transformar_precios)
 df_precios["precio"] = df_precios["precio"].astype(float)
 
-# Obtencion de valores que me interesan
+# Ampliación del DataFrame con frutas, hortalizas y carnes
+
+# Obtencion de valores que me interesan y agregado de Foreign Key.
+materias_primas = obtener_materias_primas()
+dict_validos = {}
+dict_invalidos = {}
+
+for row in df_precios.itertuples():
+    try:
+        dict_validos[row.variedad] = materias_primas[row.variedad]
+    except KeyError:
+        dict_invalidos[row.variedad] = None
+
+# Revisión de valores no encontrados
+mps_no_encontradas = [mp for mp in materias_primas.items() if mp not in dict_validos]
+
+print(dict_validos)
+print('============================')
+print(dict_invalidos)
+print('============================')
+print(mps_no_encontradas)
+
+
 
 
 # Creación de CSV

@@ -1,5 +1,5 @@
 from sql.database import SessionLocal
-from sql.models import Restaurantes, Especialidades
+from sql.models import Restaurantes, Especialidades, MateriaPrima
 from datetime import date
 import unidecode
 
@@ -82,6 +82,13 @@ def obtener_especialidades() -> dict:
         mapping = dict(session.query(Restaurantes.r_id, Especialidades.nombre_especialidad)
                             .join(Especialidades, Restaurantes.especialidad_id == Especialidades.especialidad_id)
                             .all())
+        
+def obtener_materias_primas() -> dict:
+    """
+    Helper utilizado para obtener las materias primas con su ID
+    """
+    with SessionLocal() as session:
+        mapping = dict(session.query(MateriaPrima.mp_nombre, MateriaPrima.mp_id).all())
         
     return mapping or "No encontrados"
 
