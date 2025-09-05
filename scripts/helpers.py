@@ -1,7 +1,6 @@
 from sql.database import SessionLocal
 from sql.models import Restaurantes, Especialidades, MateriaPrima
 from datetime import date
-import unidecode
 
 def obtener_estacion(fecha: date) -> str:
     """
@@ -83,6 +82,8 @@ def obtener_especialidades() -> dict:
                             .join(Especialidades, Restaurantes.especialidad_id == Especialidades.especialidad_id)
                             .all())
         
+    return mapping or "No encontrados"
+        
 def obtener_materias_primas() -> dict:
     """
     Helper utilizado para obtener las materias primas con su ID
@@ -92,17 +93,11 @@ def obtener_materias_primas() -> dict:
         
     return mapping or "No encontrados"
 
-def transformar_precios(celda):
-    """
-    Transformación a snake_case y eliminación de tildes.
-    """
-    if isinstance(celda, str):
-        if "," not in celda and "." not in celda:
-            celda = unidecode.unidecode(celda)
-        else:
-            celda = celda.replace(".", "").replace(",", ".")   
-    
-    return celda.lower().replace(" ", "_")
+
+
+
+
+
 
                         
 

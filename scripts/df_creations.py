@@ -44,6 +44,7 @@ def generar_ventas_aleatorias() -> pd.DataFrame:
         )
         SELECT * FROM mp_de_mpc;
             """
+    
     # Voy a simular los valores desde 2021 hasta la actualidad
     fechas = pd.date_range(start='2021-01-01', end='2025-08-01', freq='MS')
     fechas_lista = [ts.date() for ts in fechas]

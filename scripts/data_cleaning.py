@@ -1,12 +1,17 @@
-from scripts.helpers import transformar_precios, obtener_materias_primas
+from scripts.transformers import transformar_precios, transformar_unidades
+from scripts.helpers import obtener_materias_primas
 import tabula
-import unidecode
 import pandas as pd
 from pathlib import Path
 
+# Configuración temporal para visualizar DataFrames enteros
+pd.set_option('display.max_rows', None)
+
+# Creación de directorios
 BASE_DIR = Path(__file__).parent.parent
-directory_ipc = BASE_DIR / "data" / "indec"
-path_ipc = f"{directory_ipc}/serie_ipc_aperturas.csv"
+dir_ipc = BASE_DIR / "data" / "indec"
+dir_merc_central = BASE_DIR / "data" / "mercado-central"
+dir_limpio = BASE_DIR / "data" / "datos-limpios"
 
 lista_de_codigos = ["11", "11.1", "01.1.1"]
 
@@ -19,16 +24,16 @@ for i in range(1, 11):
     lista_de_codigos.append(f"01.{str(x)}.{str(i)}")
 
 # Filtrado del CSV del INDEC, con los codigos correspondientes de los datos que me interesan
+path_ipc = f"{dir_ipc}/serie_ipc_aperturas.csv"
 indec_df = pd.read_csv(path_ipc, encoding="ISO-8859-1", delimiter=";")
 filtered_indec_df = indec_df[indec_df["Codigo"].isin(lista_de_codigos) ].dropna()
 
 # Guardado del archivo CSV limpio
-directorio_limpio = BASE_DIR / "data" / "datos-limpios"
-path_indec_limpio = f"{directorio_limpio}/aperturas_ipc_limpio.csv"
+path_indec_limpio = f"{dir_limpio}/aperturas_ipc_limpio.csv"
 filtered_indec_df.to_csv(path_indec_limpio, sep=";")
 
 # Extracción de tablas del informe del INDEC
-path_informe = f"{directory_ipc}/informe_indec.pdf"
+path_informe = f"{dir_ipc}/informe_indec.pdf"
 tablas_indec = tabula.read_pdf(path_informe, pages=12, multiple_tables=True)
 df_precios = pd.concat(tablas_indec, ignore_index=True)
 
@@ -38,10 +43,33 @@ df_precios.columns = ["variedad", "unidad_de_medida", "precio"]
 df_precios = df_precios.dropna()
 
 # Elimino tildes y paso a snake_case
-df_precios = df_precios.applymap(transformar_precios)
+df_precios = df_precios.map(transformar_precios)
 df_precios["precio"] = df_precios["precio"].astype(float)
 
-# Ampliación del DataFrame con frutas, hortalizas y carnes
+# Ampliación del DataFrame con frutas, hortalizas y demás productos
+path_frutas = f"{dir_merc_central}/frutas.xlsx" 
+path_hortalizas = f"{dir_merc_central}/hortalizas.xlsx" 
+
+df_frutas = pd.read_excel(path_frutas, engine="openpyxl")
+df_hortalizas = pd.read_excel(path_hortalizas, engine="openpyxl")
+
+# Convinación y obtención de columnas que me interesan y promedio de precios en el DataFrame por producto
+df_ortofruticulas = (
+    pd.concat([df_frutas, df_hortalizas], ignore_index=True)[['ESP', 'MOPK']]
+      .dropna()
+      .groupby('ESP')['MOPK']
+      .mean()
+      .reset_index()
+      .rename(columns={'ESP': 'variedad', 'MOPK': 'precio'})
+)
+df_ortofruticulas['variedad'] = df_ortofruticulas['variedad'].map(transformar_precios)
+df_ortofruticulas['unidad_de_medida'] = 'kg'
+
+# Agregado del DataFrame 
+precios_indec = pd.concat([df_precios, df_ortofruticulas], ignore_index=True).sort_values(by='variedad')
+
+# Transformación a un mismo formato respecto a unidades de medida
+indec_transformado = transformar_unidades(precios_indec).round({'precio': 1})
 
 # Obtencion de valores que me interesan y agregado de Foreign Key.
 materias_primas = obtener_materias_primas()
@@ -62,11 +90,10 @@ print('============================')
 print(dict_invalidos)
 print('============================')
 print(mps_no_encontradas)
-
-
-
+print('============================')
+print(indec_transformado)
 
 # Creación de CSV
-path_precios_limpio = f"{directorio_limpio}/precios_indec.csv"
-df_precios.to_csv(path_precios_limpio, sep=";")
+path_precios_limpio = f"{dir_limpio}/precios_indec.csv"
+indec_transformado.to_csv(path_precios_limpio, sep=";")
 
