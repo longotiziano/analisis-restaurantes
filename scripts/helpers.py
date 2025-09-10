@@ -1,6 +1,8 @@
+from scripts.equivalencias import equivalencias
 from sql.database import SessionLocal
 from sql.models import Restaurantes, Especialidades, MateriaPrima
 from datetime import date
+import pandas as pd
 
 def obtener_estacion(fecha: date) -> str:
     """
@@ -92,6 +94,61 @@ def obtener_materias_primas() -> dict:
         mapping = dict(session.query(MateriaPrima.mp_nombre, MateriaPrima.mp_id).all())
         
     return mapping or "No encontrados"
+
+def obtener_coincidencias_mp(mp_dict: dict, df_precios: pd.DataFrame) -> pd.DataFrame:
+    """
+    Dada una lista de materias primas y un DataFrame de precios encuentra las similitudes y retorna
+    un DataFrame con las coincidencias y sus precios.
+    """
+    # Reemplazar nombres de mp_dict según equivalencias
+    mp_dict = {equivalencias.get(k, k): v for k, v in mp_dict.items()}
+    
+    dict_validos = {}
+    dict_invalidos = {}
+
+    for row in df_precios.itertuples():
+        for mp, value in list(mp_dict.items()):  
+            # Dividir el nombre de la mp en palabras
+            palabras_mp = mp.split("_")
+            # Si alguna palabra coincide con row.variedad
+            if any(palabra in row.variedad for palabra in palabras_mp):
+                dict_validos[row.variedad] = value
+                matched = True
+                break  # Salimos del bucle porque ya encontramos coincidencia
+
+        if row.variedad in mp_dict:
+            dict_validos[row.variedad] = mp_dict[row.variedad]
+        else:
+            dict_invalidos[row.variedad] = None
+    
+    print(f"No se han encontrado conincidencias para {len(dict_invalidos)}: {dict_invalidos}\n")
+    df_coincidencias = pd.DataFrame(list(dict_validos.items()), columns=["variedad", "mp_id"]).sort_values(by="mp_id", ascending=True, inplace=False)
+    print(f"Se han encontrado coincidencias para {len(dict_validos)}: {dict_validos}\n")
+
+    return df_coincidencias
+
+def asignacion_de_precios(df_coincidencias: pd.DataFrame, df_precios: pd.DataFrame) -> list:
+    """
+    Creo la lista de diccionarios que sera ingresada en la base de datos en base a las coincidencias
+    de dos DataFrames y asignandoles sus respectivos precios.
+    """
+    mps_con_precio = [] 
+
+    for coincidencia in df_coincidencias.itertuples():
+        for precio in df_precios.itertuples():
+            if coincidencia.variedad == precio.variedad:
+                mps_con_precio.append({"mp_id": coincidencia.mp_id, "precio": precio.precio, "unidad_de_medida": "kg"})
+                
+    df = pd.DataFrame(mps_con_precio)
+
+    from scripts.data_cleaning import dir_limpio
+
+    df.to_csv(f"{dir_limpio}/precios_indec_limpios.csv", index=False) 
+
+
+
+
+
 
 
 

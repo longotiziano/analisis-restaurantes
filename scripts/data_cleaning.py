@@ -1,5 +1,5 @@
 from scripts.transformers import transformar_precios, transformar_unidades
-from scripts.helpers import obtener_materias_primas
+from scripts.helpers import obtener_materias_primas, obtener_coincidencias_mp, asignacion_de_precios
 import tabula
 import pandas as pd
 from pathlib import Path
@@ -71,27 +71,25 @@ precios_indec = pd.concat([df_precios, df_ortofruticulas], ignore_index=True).so
 # Transformación a un mismo formato respecto a unidades de medida
 indec_transformado = transformar_unidades(precios_indec).round({'precio': 1})
 
-# Obtencion de valores que me interesan y agregado de Foreign Key.
+# Me quedo con los precios más recientes
+indec_filtrado = (
+    indec_transformado
+    .sort_values(by=["variedad", "precio"], ascending=[True, False])
+    .drop_duplicates(subset="variedad", keep="first")
+)
+
+# Me quedo con los precios más actualizados del DataFrame
 materias_primas = obtener_materias_primas()
-dict_validos = {}
-dict_invalidos = {}
+df_validos = obtener_coincidencias_mp(materias_primas, indec_filtrado)
+mps_no_encontradas = sorted([mp for mp in materias_primas.items() if mp not in df_validos])
 
-for row in df_precios.itertuples():
-    try:
-        dict_validos[row.variedad] = materias_primas[row.variedad]
-    except KeyError:
-        dict_invalidos[row.variedad] = None
+# Creo el archivo csv preparado para ser ingresada en la base de datos
+lista_precios = asignacion_de_precios(df_validos, indec_filtrado)
 
-# Revisión de valores no encontrados
-mps_no_encontradas = [mp for mp in materias_primas.items() if mp not in dict_validos]
+print(f"Mps no encontradas {len(mps_no_encontradas)}: {mps_no_encontradas}\n")
+print(len(materias_primas), "\n")
+print(materias_primas, "\n")
 
-print(dict_validos)
-print('============================')
-print(dict_invalidos)
-print('============================')
-print(mps_no_encontradas)
-print('============================')
-print(indec_transformado)
 
 # Creación de CSV
 path_precios_limpio = f"{dir_limpio}/precios_indec.csv"
